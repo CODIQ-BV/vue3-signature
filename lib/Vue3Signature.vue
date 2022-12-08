@@ -1,10 +1,12 @@
 <template>
   <div :style="{ width: w, height: h }" @touchmove.prevent>
     <canvas
-      :id="state.uid"
-      :data-uid="state.uid"
-      :disabled="state.disabled"
-      :style="canvasStyle"
+        :width="w"
+        :height="h"
+        :id="state.uid"
+        :data-uid="state.uid"
+        :disabled="state.disabled"
+        :style="canvasStyle"
     ></canvas>
   </div>
 </template>
@@ -76,15 +78,35 @@ let state = reactive<{
 });
 
 watch(
-  () => props.disabled,
-  (val) => {
-    if (val) {
-      state.sig.off();
-    } else {
-      state.sig.on();
+    () => props.disabled,
+    (val) => {
+      if (val) {
+        state.sig.off();
+      } else {
+        state.sig.on();
+      }
     }
-  }
 );
+
+const resizeCanvas = () => {
+  let c = document.getElementById(state.uid) as HTMLCanvasElement;
+  let url;
+  if (!isEmpty()) {
+    url = save();
+  }
+  let ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const reg = RegExp(/px/);
+  c.width = reg.test(props.w)
+      ? Number(props.w.replace(/px/g, "")) * ratio
+      : c.offsetWidth * ratio;
+  c.height = reg.test(props.h)
+      ? Number(props.h.replace(/px/g, "")) * ratio
+      : c.offsetHeight * ratio;
+  c.getContext("2d").scale(ratio, ratio);
+  clear();
+  !props.clearOnResize && url !== undefined && fromDataURL(url);
+  Object.keys(props.waterMark).length && addWaterMark(props.waterMark);
+}
 
 const draw = () => {
   let canvas = document.getElementById(state.uid) as HTMLCanvasElement;
@@ -98,11 +120,11 @@ const draw = () => {
     let ratio = Math.max(window.devicePixelRatio || 1, 1);
     const reg = RegExp(/px/);
     c.width = reg.test(props.w)
-      ? Number(props.w.replace(/px/g, "")) * ratio
-      : c.offsetWidth * ratio;
+        ? Number(props.w.replace(/px/g, "")) * ratio
+        : c.offsetWidth * ratio;
     c.height = reg.test(props.h)
-      ? Number(props.h.replace(/px/g, "")) * ratio
-      : c.offsetHeight * ratio;
+        ? Number(props.h.replace(/px/g, "")) * ratio
+        : c.offsetHeight * ratio;
     c.getContext("2d").scale(ratio, ratio);
     clear();
     !props.clearOnResize && url !== undefined && fromDataURL(url);
@@ -178,6 +200,7 @@ onMounted(() => {
 });
 
 defineExpose({
+  resizeCanvas,
   save,
   clear,
   isEmpty,
